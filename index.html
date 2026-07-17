@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMoE-V2M: Hierarchical Mixture-of-Experts for Video-to-Music Generation</title>
+<meta name="description" content="HMoE-V2M: a hierarchical mixture-of-experts framework for video-to-music generation.">
+
+<!-- Open Graph (edit URL + image before deploy) -->
+<meta property="og:title" content="HMoE-V2M">
+<meta property="og:description" content="Hierarchical Mixture-of-Experts for Video-to-Music Generation">
+<meta property="og:type" content="website">
+
+<!-- Fonts: Newsreader (display) + Inter (body) + JetBrains Mono (code) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="container">
+    <p class="eyebrow">Video-to-Music Generation</p>
+    <h1 class="title">HMoE-V2M</h1>
+    <p class="subtitle">Hierarchical Mixture-of-Experts for Video-to-Music Generation</p>
+
+    <!-- <ul class="authors">
+      <li><a href="#">Shulei Ji</a><sup>1</sup></li>
+      <li><a href="#">Author Two</a><sup>1,2</sup></li>
+      <li><a href="#">Author Three</a><sup>2</sup></li>
+      <li><a href="#">Kejun Zhang</a><sup>1✉</sup></li>
+    </ul>
+
+    <ul class="affiliations">
+      <li><sup>1</sup>Zhejiang University</li>
+      <li><sup>2</sup>Affiliation Two</li>
+    </ul> 
+
+    <nav class="links">
+      <a class="btn" href="https://github.com/Tayjsl97/HMoE-V2M" target="_blank" rel="noopener">
+        <span class="icon">⌥</span> Code
+      </a>
+      <a class="btn" href="#bibtex">
+        <span class="icon">❝</span> BibTeX
+      </a>
+    </nav> -->
+  </div>
+</header>
+
+<!-- ============ TEASER / ARCHITECTURE ============ -->
+<section class="section">
+  <div class="container container--teaser">
+    <div class="teaser-row">
+      <figure class="teaser">
+        <h3 class="teaser-title">The motivation of HMoE-V2M</h3>
+        <img src="assets/fig0.png" alt="Motivation of HMoE-V2M" class="teaser-img">
+        <figcaption>
+          Existing video-to-music systems often require separate pipelines for different video types due to their heterogeneous visual cues. HMoE-V2M instead builds a multi-perspective feature bank and introduces hierarchical mixture-of-experts mechanisms at different stages of the generation pipeline, enabling a unified model to generate music for diverse video types.
+        </figcaption>
+      </figure>
+
+      <figure class="teaser">
+        <h3 class="teaser-title">Multi-perspective Feature Bank</h3>
+        <img src="assets/fig2.png" alt="Multi-perspective feature bank of HMoE-V2M" class="teaser-img">
+        <figcaption>
+          The multi-perspective feature bank comprising multi-granularity semantic features and multi-type rhythmic features.
+        </figcaption>
+      </figure>
+    </div>
+
+    <figure class="teaser teaser-full">
+      <h3 class="teaser-title">HMoE-V2M</h3>
+      <img src="assets/fig1.png" alt="Architecture of HMoE-V2M" class="teaser-img">
+      <figcaption>
+        The architecture of HMoE-V2M, comprising three hierarchical levels of MoE, i.e., an FF-MoE for adaptive feature weighting, a CA-MoH for fine-grained cross-modal alignment, and an FFN-MoE for denoising expert specialization.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ============ ABSTRACT ============ -->
+<section class="section section--narrow section--abstract">
+  <div class="container">
+    <h2>Abstract</h2>
+    <p>
+      Video-to-Music Generation (V2M) aims to automatically synthesize background music conditioned on video content. However, existing methods typically adopt fixed feature extraction and fusion strategies for specific video types, failing to account for the inherently heterogeneous nature of diverse video content and thus limiting their adaptability across different scenarios. To address this limitation, we propose HMoE-V2M, a diffusion-based universal video-to-music generation framework that introduces hierarchical adaptive modeling through cascaded Mixture-of-Experts (MoE) mechanisms across the generation pipeline, enabling a single model to adaptively serve diverse video types. Specifically, HMoE-V2M incorporates three cascaded MoEs: (1) A Feature Fusion MoE (FF-MoE) that dynamically routes over a constructed feature bank comprising multi-granularity semantic features and multi-type rhythmic features. Conditioned on features from the feature bank and the diffusion timestep, FF-MoE adaptively learns feature-wise weights to produce content- and timestep-aware fused conditions for subsequent cross-modal alignment. (2) A Cross-attention Mixture-of-Heads (CA-MoH) performs sequential cross-attention over the semantic and rhythmic fused conditions produced by FF-MoE, with attention heads within each layer differentially activated to model fine-grained cross-modal alignment. (3) A denoising Feed-Forward Network MoE (FFN-MoE) routes among experts based on the CA-MoH-enhanced representations and diffusion timestep, enabling specialized denoising transformation. Extensive experiments conducted across seven datasets, including six datasets spanning silent instrument performance, dance, and music video scenarios, as well as a held-out general-purpose benchmark, demonstrate that HMoE-V2M consistently outperforms prior methods on the majority of datasets, achieving the best overall performance across diverse video types, as evidenced by both objective metrics and subjective evaluations. Further routing behavior analysis reveals meaningful differentiation in how each level of MoE responds to different video types.
+    </p>
+  </div>
+</section>
+
+<!-- ============ SAMPLES ============ -->
+<section class="section">
+  <div class="container container--wide">
+    <h2>Demo Samples</h2>
+
+    <!-- ========================================================
+         HOW TO FILL IN (Plan A: music baked into each video)
+         For every cell, mux the soundtrack onto the shared clip, e.g.:
+           ffmpeg -i clip.mp4 -i ours.wav -map 0:v -map 1:a \
+                  -c:v copy -shortest samples/ours_instrument_01.mp4
+         Then replace each .img-placeholder with:
+           <video controls preload="metadata" poster="samples/<name>.jpg">
+             <source data-src="samples/<name>.mp4" type="video/mp4"></video>
+         Duplicate a .sample-row to add more examples. Rename Method A/B/... to real models.
+         ======================================================== -->
+
+    <!-- ---------- Category 1: Instrument Performance (4 methods) ---------- -->
+    <details class="category">
+      <summary class="cat-summary">
+        <span class="cat-title">1 · Instrument Performance</span>
+        <span class="cat-sub">HMoE-V2M (Ours) vs. Foley Music, VidMuse, Diff-V2M</span>
+      </summary>
+      <div class="cat-body">
+
+<!--
+      <article class="sample-row methods-4">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/72yB-xyIcGI_4.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/72yB-xyIcGI_4%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Foley Music</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/72yB-xyIcGI_4%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/72yB-xyIcGI_4%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+-->
+
+      <article class="sample-row methods-4">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/9EizWhixKCg_5.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/9EizWhixKCg_5%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Foley Music</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/9EizWhixKCg_5%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/9EizWhixKCg_5%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-4">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ADWqPAMyXto_10.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ADWqPAMyXto_10%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Foley Music</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ADWqPAMyXto_10%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ADWqPAMyXto_10%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-4">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/s1hBC8N4-Zo_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/s1hBC8N4-Zo_2%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Foley Music</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/s1hBC8N4-Zo_2%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/s1hBC8N4-Zo_2%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-4">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/yXKJiqOuvkA_0.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/yXKJiqOuvkA_0%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Foley Music</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/yXKJiqOuvkA_0%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/yXKJiqOuvkA_0%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+<!--
+      <article class="sample-row methods-4">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ZoE25YHTGDQ_3.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ZoE25YHTGDQ_3%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Foley Music</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ZoE25YHTGDQ_3%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/instrument/ZoE25YHTGDQ_3%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+-->
+      </div>
+    </details>
+
+    <!-- ---------- Category 2: Dance (4 methods) ---------- -->
+    <details class="category">
+      <summary class="cat-summary">
+        <span class="cat-title">2 · Dance</span>
+        <span class="cat-sub">HMoE-V2M (Ours) vs. MuMu-LLaMA, GVMGen, VidMuse, Diff-V2M</span>
+      </summary>
+      <div class="cat-body">
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/31_236.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/31_236%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/31_236%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/31_236%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/31_236%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/69_289.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/69_289%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/69_289%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/69_289%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/69_289%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gHO_sBM_c01_d21_mHO5_ch02.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gHO_sBM_c01_d21_mHO5_ch02%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gHO_sBM_c01_d21_mHO5_ch02%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gHO_sBM_c01_d21_mHO5_ch02%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gHO_sBM_c01_d21_mHO5_ch02%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gJB_sBM_c01_d09_mJB5_ch02.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gJB_sBM_c01_d09_mJB5_ch02%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gJB_sBM_c01_d09_mJB5_ch02%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gJB_sBM_c01_d09_mJB5_ch02%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/dance/gJB_sBM_c01_d09_mJB5_ch02%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      </div>
+    </details>
+
+    <!-- ---------- Category 3: Music Video (5 methods) ---------- -->
+    <details class="category">
+      <summary class="cat-summary">
+        <span class="cat-title">3 · Music Video</span>
+        <span class="cat-sub">HMoE-V2M (Ours) vs. MuMu-LLaMA, GVMGen, VidMuse, Diff-V2M</span>
+      </summary>
+      <div class="cat-body">
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/49_4.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/49_4%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/49_4%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/49_4%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/49_4%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/127_6.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/127_6%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/127_6%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/127_6%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/127_6%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/189_1.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/189_1%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/189_1%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/189_1%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/189_1%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/352_3.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/352_3%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/352_3%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/352_3%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/352_3%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/417_7.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/417_7%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/417_7%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/417_7%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/417_7%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/516_1.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/516_1%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/516_1%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/516_1%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/516_1%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/600_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/600_2%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/600_2%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/600_2%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/600_2%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/630_5.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/630_5%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/630_5%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/630_5%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/mv/630_5%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      </div>
+    </details>
+
+    <!-- ---------- Category 4: General Video (V2M-Bench) (5 methods) ---------- -->
+    <details class="category">
+      <summary class="cat-summary">
+        <span class="cat-title">4 · General Video <span class="src">from V2M-Bench</span></span>
+        <span class="cat-sub">HMoE-V2M (Ours) vs. MuMu-LLaMA, GVMGen, VidMuse, Diff-V2M</span>
+      </summary>
+      <div class="cat-body">
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/-k-DUZivB8c_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/-k-DUZivB8c_2%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/-k-DUZivB8c_2%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/-k-DUZivB8c_2%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/-k-DUZivB8c_2%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/0KLLxVKDVBc_1.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/0KLLxVKDVBc_1%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/0KLLxVKDVBc_1%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/0KLLxVKDVBc_1%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/0KLLxVKDVBc_1%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1-q8C_c-nlM_0.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1-q8C_c-nlM_0%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1-q8C_c-nlM_0%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1-q8C_c-nlM_0%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1-q8C_c-nlM_0%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1dCrzf04_xY_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1dCrzf04_xY_2%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1dCrzf04_xY_2%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1dCrzf04_xY_2%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/1dCrzf04_xY_2%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/3zC13ekq1Sk_1.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/3zC13ekq1Sk_1%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/3zC13ekq1Sk_1%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/3zC13ekq1Sk_1%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/3zC13ekq1Sk_1%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/7oPxjhBA-Ss_3.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/7oPxjhBA-Ss_3%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/7oPxjhBA-Ss_3%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/7oPxjhBA-Ss_3%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/7oPxjhBA-Ss_3%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/ZnViLnjcWzM_3.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/ZnViLnjcWzM_3%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/ZnViLnjcWzM_3%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/ZnViLnjcWzM_3%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/ZnViLnjcWzM_3%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      <article class="sample-row methods-5">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/doH136ukBg8_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/doH136ukBg8_2%20%280%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">MuMu-LLaMA</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/doH136ukBg8_2%20%281%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">GVMGen</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/doH136ukBg8_2%20%282%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">VidMuse</figcaption>
+        </figure>
+        <figure class="clip">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/v2m/doH136ukBg8_2%20%283%29.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label">Diff-V2M</figcaption>
+        </figure>
+      </article>
+
+      </div>
+    </details>
+
+    <!-- ---------- Category 5: AI-Generated Video (Seedance 2.0) (5 methods) ---------- -->
+    <details class="category">
+      <summary class="cat-summary">
+        <span class="cat-title">5 · AI-Generated Video <span class="src">by Seedance 2.0</span></span>
+        <span class="cat-sub">HMoE-V2M (Ours) generated samples</span>
+      </summary>
+      <div class="cat-body">
+      <article class="sample-row seed-grid">
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/8.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/12.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/15.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/33_4.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/33_7.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/37.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/46_10s.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/49.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/61_1.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/71_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/73_2.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/74.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+        <figure class="clip clip--ours">
+          <video controls preload="metadata" playsinline>
+            <source data-src="samples/seedance/76_1.mp4" type="video/mp4">
+          </video>
+          <figcaption class="clip-label clip-label--ours">Ours</figcaption>
+        </figure>
+      </article>
+
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ============ BIBTEX ============ -->
+<!-- <section class="section section--narrow" id="bibtex">
+  <div class="container">
+    <h2>BibTeX</h2>
+    <pre class="bibtex"><code>@article{ji2026hmoev2m,
+  title   = {HMoE-V2M: Hierarchical Mixture-of-Experts for Video-to-Music Generation},
+  author  = {Ji, Shulei and others},
+  journal = {Under review},
+  year    = {2026}
+}</code></pre>
+  </div>
+</section> -->
+
+<footer class="footer">
+  <div class="container">
+    <p>
+      Page template adapted from the academic
+      <a href="https://nerfies.github.io/" target="_blank" rel="noopener">Nerfies</a> project page.
+      Source available under CC BY-SA 4.0.
+    </p>
+  </div>
+</footer>
+
+<script>
+  // Lazy-load: only fetch a category's videos the first time it is opened.
+  document.querySelectorAll('details.category').forEach(function (d) {
+    d.addEventListener('toggle', function () {
+      if (!d.open || d.dataset.loaded) return;
+      d.dataset.loaded = '1';
+      d.querySelectorAll('video source[data-src]').forEach(function (s) {
+        s.src = s.dataset.src;
+        s.removeAttribute('data-src');
+      });
+      d.querySelectorAll('video').forEach(function (v) { v.load(); });
+    });
+  });
+</script>
+</body>
+</html>

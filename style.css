@@ -1,0 +1,404 @@
+/* ============================================================
+   HMoE-V2M project page — Nerfies-style academic layout
+   Palette: ink on warm paper, single deep-teal accent
+   ============================================================ */
+
+:root {
+  --paper:      #fbfaf7;
+  --paper-alt:  #f3f1ea;
+  --ink:        #1c1d1f;
+  --ink-soft:   #4a4c50;
+  --rule:       #dcd8cf;
+  --accent:     #0f6e6e;   /* deep teal */
+  --accent-ink: #0b5454;
+  --ours:       #b5462a;   /* warm terracotta for "Ours" emphasis */
+  --maxw:       960px;
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  font-size: 17px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.container--wide { max-width: 1180px; }
+.container--teaser { max-width: 1280px; }
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { color: var(--accent-ink); text-decoration: underline; }
+
+sup { font-size: 0.7em; }
+
+/* -------- Hero -------- */
+.hero {
+  padding: 72px 0 56px;
+  text-align: center;
+  border-bottom: 1px solid var(--rule);
+}
+
+.eyebrow {
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 14px;
+  font-weight: 600;
+}
+
+.title {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 600;
+  font-size: clamp(3rem, 8vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.subtitle {
+  font-family: "Newsreader", Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(1.15rem, 3vw, 1.6rem);
+  color: var(--ink-soft);
+  max-width: 720px;
+  margin: 14px auto 0;
+}
+
+.authors, .affiliations {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 18px;
+}
+.authors {
+  margin: 30px 0 6px;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+.affiliations {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+}
+.venue {
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  margin: 10px 0 0;
+}
+
+/* -------- Buttons -------- */
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  background: var(--ink);
+  color: var(--paper);
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+.btn:hover {
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  transform: translateY(-1px);
+}
+.btn .icon { font-size: 0.95em; }
+
+/* -------- Sections -------- */
+.section { padding: 56px 0; }
+.section--narrow .container { max-width: 740px; }
+.section--abstract .container { max-width: 1110px; }
+.section--alt { background: var(--paper-alt); border-block: 1px solid var(--rule); }
+
+h2 {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 600;
+  font-size: 2rem;
+  letter-spacing: -0.01em;
+  margin: 0 0 22px;
+  text-align: center;
+}
+
+.section-note, .section--narrow p {
+  color: var(--ink-soft);
+}
+.section-note {
+  text-align: center;
+  max-width: 720px;
+  margin: -8px auto 32px;
+  font-size: 0.95rem;
+}
+
+/* -------- Figures / placeholders -------- */
+figure { margin: 0; }
+figcaption {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+  margin-top: 14px;
+  text-align: center;
+  line-height: 1.55;
+}
+.teaser figcaption { max-width: 760px; margin-inline: auto; }
+
+/* -------- 前两张图并排 -------- */
+.teaser-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 36px;
+  width: 100%;
+  margin: 0 auto 48px;
+}
+
+.teaser-row .teaser {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  text-align: center;
+}
+
+/* 两张图统一宽度 */
+.teaser-row .teaser-img {
+  width: 100%;
+  max-width: none;
+  height: 360px;
+  object-fit: contain;
+  margin: 0 auto;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+
+/* 标题 */
+.teaser-row .teaser-title {
+  margin-bottom: 14px;
+}
+
+/* caption */
+.teaser-row figcaption {
+  margin-top: 14px;
+  padding: 0 8px;
+  max-width: none;
+  text-align: justify;
+  line-height: 1.55;
+}
+
+/* -------- 第三张图单独一行 -------- */
+.teaser-full {
+  display: block;
+  max-width: 70%;          /* ← 改这里控制第三张图大小 */
+  margin: 0 auto 48px;
+}
+.teaser-full .teaser-img {
+  width: 100%;
+  height: auto;
+}
+.teaser-full figcaption {
+  max-width: 900px;
+  margin-inline: auto;
+}
+
+.teaser-title {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.25rem;
+  text-align: center;
+  margin: 0 0 14px;
+}
+
+/* -------- 窄屏时前两张图堆叠 -------- */
+@media (max-width: 820px) {
+  .teaser-row { flex-direction: column; gap: 40px; }
+  .teaser-full { max-width: 100%; }
+}
+.teaser-img {
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+}
+
+.img-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 220px;
+  background:
+    repeating-linear-gradient(45deg, transparent, transparent 11px,
+      rgba(15,110,110,0.05) 11px, rgba(15,110,110,0.05) 22px);
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  color: var(--accent-ink);
+  font-weight: 500;
+  text-align: center;
+  padding: 20px;
+}
+.clip .img-placeholder.small { min-height: 0; }
+.img-placeholder small { color: var(--ink-soft); font-weight: 400; }
+.img-placeholder::before {
+  content: attr(data-label);
+  position: absolute;
+  transform: translateY(-46px);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+  font-family: "JetBrains Mono", monospace;
+}
+
+img, video { max-width: 100%; height: auto; border-radius: 8px; display: block; }
+
+/* -------- Samples -------- */
+.category { margin-top: 16px; }
+.category:first-of-type { margin-top: 8px; }
+
+/* accordion shell */
+details.category + details.category { margin-top: 12px; }
+details.category {
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.cat-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 0.15s ease;
+}
+.cat-summary::-webkit-details-marker { display: none; }
+.cat-summary:hover { background: var(--paper-alt); }
+.cat-summary::after {
+  content: "▸";
+  position: absolute;
+  right: 26px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  transition: transform 0.18s ease;
+}
+details.category { position: relative; }
+details.category[open] .cat-summary::after { transform: rotate(90deg); }
+details.category[open] .cat-summary { border-bottom: 1px solid var(--rule); }
+.cat-body { padding: 22px; }
+
+.cat-title {
+  font-family: "Newsreader", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.35rem;
+}
+.cat-title .src {
+  font-family: "Inter", sans-serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+.cat-sub {
+  font-size: 0.85rem;
+  color: var(--accent);
+  letter-spacing: 0.01em;
+}
+
+/* row = N equal cells, each a video clip with music baked in */
+.sample-row {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+.sample-row + .sample-row {
+  margin-top: 22px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+}
+
+.methods-4 { grid-template-columns: repeat(4, 1fr); }
+.methods-5 { grid-template-columns: repeat(5, 1fr); }
+.seed-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+
+.clip { margin: 0; display: grid; gap: 8px; }
+.clip video,
+.clip .img-placeholder {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 8px;
+}
+.clip--ours .img-placeholder,
+.clip--ours video { box-shadow: 0 0 0 2px var(--ours); }
+
+.clip-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+.clip-label--ours { color: var(--ours); }
+
+/* -------- BibTeX -------- */
+.bibtex {
+  background: var(--ink);
+  color: #e9e7df;
+  border-radius: 10px;
+  padding: 22px 24px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  line-height: 1.7;
+}
+.bibtex code { font-family: inherit; }
+
+/* -------- Footer -------- */
+.footer {
+  padding: 32px 0 48px;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* -------- Responsive -------- */
+@media (max-width: 900px) {
+  .methods-4, .methods-5 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .methods-4, .methods-5 { grid-template-columns: 1fr; }
+  .section { padding: 44px 0; }
+}
+
+/* -------- A11y -------- */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
